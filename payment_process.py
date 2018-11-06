@@ -9,6 +9,7 @@ class Payment_process:
 		self.payments = loaded.payments
 		self.keyset = loaded.keyset
 		self.connections = loaded.payments_list
+		self.weights = loaded.sender_weights
 		
 	def sort_payments(self):
 		for key, value in self.payments.items():
@@ -38,27 +39,36 @@ class Payment_process:
 				data[k] = data_k_fl*scale
 		return data
 	
+	def process_weights(self):
+		for k,v in self.connections.items():
+			for payment in v.payments:
+				key_for_weights = k[:k.find('#')]
+				payment.sender_weight = self.weights[key_for_weights]
+				
 	def process3(self):
+		exc = 0
 		for k, v in self.connections.items():
 			if len(v.date_amount) >= 2:
 				#data = self.sort_connections(v.date_amount)
 				dates = [d[0].day for d in v.date_amount]
 				dates_mean = np.mean(dates)
 				dates_std = np.std(dates)
-				for date, amount in v.date_amount:
+				for date_amount, payment in zip(v.date_amount, v.payments):
+					date = date_amount[0]
+					amount = date_amount[1]
 					diff = abs(date.day - dates_mean)
-					if (diff > 8 or dates_std > 7) or not (7700 < amount < 116000) or not (25 < dates_mean < 35):
+					if (diff > 8 or dates_std > 7) or not (12000 < amount < 116000) or not (25 < dates_mean < 35) or payment.sender_weight not in range(10,500):
+						exc += 1
 						# probably random dates or case for clustering
 						# probably not salary
 						pass
 					else:
 						v.salaries.append([date, amount])
 			if len(v.salaries) > 0:
-				#print(v.salaries)
 				v.salaries = np.array(v.salaries)
-				#v.salaries[:,1] = self.normalize_connections()		# normalize amounts for p_amount3() Not working now ->also no problem
-				#print(v.salaries)
 		self.process3_amounts()
+		print('excluded :' + str(exc))
+		
 		
 	def process3_amounts(self):
 		for k, v in self.connections.items():
@@ -89,7 +99,7 @@ class Payment_process:
 				dates_norm = self.normalize_data(delta_dates)
 				err_income = np.std(income_list)/np.mean(income_list)
 				err_dates = abs(np.mean(delta_dates) - 30.411)	#avg num off days in month
-				if err_dates < 5 and 7700 < np.mean(income_list) < 115000:		# max error of 5 days, otherwise not a salary, salary sum must be reasonable
+				if err_dates < 5 and 12000 < np.mean(income_list) < 115000:		# max error of 5 days, otherwise not a salary, salary sum must be reasonable
 					all_err_dates[key] = err_dates
 					all_err_income[key] = err_income
 					all_err[key] = (err_income*10 + err_dates/4)		#weighting of errors

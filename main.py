@@ -9,7 +9,6 @@ from graph_plotting import Graph_plotting
 class Main:
 	
 	def __init__(self):
-		''' mothefucka'''
 		self.l = Loader('data_for_applicants.txt')
 		
 	def find_salaries(self):
@@ -25,6 +24,7 @@ class Main:
 		
 	def find_salaries2(self):
 		pp = Payment_process(self.l)
+		pp.process_weights()
 		pp.process3()
 		
 	def do_graph_plotting(self):
@@ -34,7 +34,12 @@ class Main:
 		gg.payment_grouped_issalary()
 		gg.grouped_payment_perc_issalary()
 		
+	def histogram_prototype(self):
+		gg = Graph_plotting(self.l)
+		gg.sender_weights_histogram()
+		
 m = Main()
 m.find_salaries2()
 #m.clustering()
-m.do_graph_plotting()
+#m.do_graph_plotting()
+m.histogram_prototype()

@@ -12,6 +12,7 @@ class Loader:
 			self.amount = amount
 			self.is_salary = 0	#percentage
 			self.k_means_error = 0
+			self.sender_weight = 0
 			
 	class Connection:
 		def __init__(self):
@@ -28,8 +29,20 @@ class Loader:
 			self.amounts = []
 			self.salaries = []		# for payments that we think are salaries
 			self.salary_perc = 0	# percentage that sequence is salary according to payment_process.py
+
 		def add_payment(self, paym):
 			self.payments.append(paym)
+			
+	def adjust_sender_weights(self, sender, receiver):
+		if sender + receiver not in self.sender_weights_check:
+			if sender not in self.sender_weights.keys():
+				self.sender_weights[sender] = 1
+			else:
+				self.sender_weights[sender] += 1
+				if self.sender_weights[sender] > self.max_send:
+					self.max_send = self.sender_weights[sender]
+		else:
+			self.sender_weights_check.add(sender + receiver)
 			
 	def __init__(self, fname):
 		#self.raw_data = np.array(['date','to','sum','from'])
@@ -39,6 +52,11 @@ class Loader:
 		self.payments_list = dict()
 		self.keyset = set()
 		self.amounts = list()
+		self.sender_weights = dict()
+		self.sender_weights_check = set()
+		
+		self.max_send = 0
+		
 		with open(fname) as f:
 			for line in f:
 				if counter % 100000 == 0:
@@ -52,6 +70,9 @@ class Loader:
 				l[2] = int(l[2])	#sum as integer
 				self.data.append(l)	#tried dataframe, numpy array, simple list seems to be the fastest
 				key_payments = l[1] + '#' + l[3]
+				
+				self.adjust_sender_weights(l[1], l[3])
+				
 				if key_payments in self.keyset:		#much faster than asking for keys()
 					self.payments[key_payments].append(self.Payment(l[0], l[2]))
 					
@@ -69,5 +90,6 @@ class Loader:
 				
 				self.amounts.append(l[2])
 		
+		print(' max send ' + str(self.max_send))
 		
 #l = Loader('data_for_applicants.txt')

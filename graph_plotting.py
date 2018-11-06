@@ -2,13 +2,15 @@ from __future__ import division
 
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
 
 class Graph_plotting:
 	
 	def __init__(self, loaded):
 		self.payments = loaded.payments
 		self.keyset = loaded.keyset
-		self.connections = loaded.payments_list
+		self.connections = loaded.payments_list		# payments list contains Connections
+		self.weights = loaded.sender_weights
 		
 	def monthly_salary_perc(self):
 		percentages = []
@@ -89,6 +91,34 @@ class Graph_plotting:
 		plt.show()
 		plt.close()
 		
+	def sender_weights_histogram(self):
+		histo_weights = dict()
+		colors = {0: "red", 1: "black", 2: "blue", 3:"green"}
+		paint = []
+		for k, v in self.connections.items():
+			for payment in v.payments:
+				key_for_weights = k[:k.find('#')]
+				if self.weights[key_for_weights] not in histo_weights.keys():
+					histo_weights[self.weights[key_for_weights]] = 1
+				else:
+					histo_weights[self.weights[key_for_weights]] += 1
+		print('histo histo_weights')
+		
+		x = []
+		y = []
+		weights_np = np.array(list(histo_weights.keys())).reshape(-1,1)
+		#print(weights_np)
+		kmeans = KMeans(n_clusters=4, random_state=0).fit(weights_np)
+		for k,v in histo_weights.items():
+			x.append(k)
+			cluster = int(kmeans.predict(k))
+			paint.append(colors[cluster])
+			y.append(v)
 			
-			
-			
+		plt.xticks([i for i in range(0 ,max(x), 100)])
+		plt.yticks([i for i in range(0,max(y), 5000)])
+		plt.xlabel('number of transactions from account')
+		plt.ylabel('num of accounts with given num of transactions')
+		plt.scatter(x,y, c = paint)
+		plt.show()
+		#plt.savefig('account_weights.png')
